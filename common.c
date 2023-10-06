@@ -10,13 +10,21 @@ void logexit(const char *msg) {
 }
 
 void printBoard(int board[4][4]) {
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
-      if (board[i][j] == -1) {
-        printf("*\t\t");
-      } else {
-        printf("%d", board[i][j]);
-        printf("\t\t");
+  int i, j;
+  for(i = 0; i < 4; i++) {
+    for(j = 0; j < 4; j++) {
+      switch (board[i][j]) {
+        case (-1):
+          printf("*\t\t");
+          break;
+        case (-2):
+          printf("-\t\t");
+          break;
+        case (-3):
+          printf(">\t\t");
+          break;
+        default:
+          printf("%d\t\t", board[i][j]);
       }
     }
     printf("\n");
