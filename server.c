@@ -11,6 +11,7 @@
 
 #define BUFSZ 1024
 int board[4][4];
+int bombs = 3;
 struct action game;
 
 // Tipo protocolo, port
@@ -20,20 +21,20 @@ void usage(int argc, char **argv) {
   exit(EXIT_FAILURE);
 }
 
-void printDefaultBoard(){
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
-      printf("%d\t\t", game.board[i][j]);
-      }
-    printf("\n");
-    }
-}
-
 void resetBoard() {
   int i, j;
   for(i = 0; i < 4; i++) {
     for(j = 0; j < 4; j++) {
-      board[i][j] = -2;
+      game.board[i][j] = -2;
+    }
+  }
+}
+
+void setBoard() {
+  int i, j;
+  for(i = 0; i < 4; i++) {
+    for(j = 0; j < 4; j++) {
+      game.board[i][j] = board[i][j];
     }
   }
 }
@@ -75,17 +76,15 @@ void getMatrix(char *buf) {
 void handleClientCommand (struct action clientGame) {
   int x = clientGame.coordinates[0];
   int y = clientGame.coordinates[1];
-  printf("ComRecv: %d, Coord: %d %d\n", clientGame.type, clientGame.coordinates[0], clientGame.coordinates[1]);
+
   switch (clientGame.type) {
     case 0:
-      printf("start\n");
       break;
     case 1:
       if (board[x][y] == -1) {
-        printf("Game Over\n");
         game.type = 8;
+        setBoard();
       } else {
-        printf("Reveal\n");
         game.board[x][y] = board[x][y];
         game.type = 3;
       }
@@ -99,10 +98,9 @@ void handleClientCommand (struct action clientGame) {
       game.type = 3;
       break;
     case 5: // reset
+      printf("starting new game\n");
       resetBoard();
-      // game.type = 6;
       break;
-    printf("reset\n");
   }
 }
 
@@ -112,7 +110,6 @@ int main(int argc, char **argv) {
   }
 
   getMatrix(argv[4]);
-  // printBoard(board);
 
   struct sockaddr_storage storage;
   // arg[1] -> tipo protocolo, argv[2] -> porta
@@ -136,15 +133,14 @@ int main(int argc, char **argv) {
     logexit("bind");
   }
 
-  // 10 -> número máximo de conexões pendentes
   if (listen(s, 10) != 0) {
     logexit("listen");
   }
 
   char addrstr[BUFSZ];
   addrtostr(addr, addrstr, BUFSZ);
-  // printf("bound to %s, waiting connections\n", addrstr);
-
+  printBoard(board);
+  
   while(1) {
     struct sockaddr_storage cstorage; // Endereço do cliente.
     struct sockaddr *caddr = (struct sockaddr *)(&cstorage);
@@ -155,12 +151,8 @@ int main(int argc, char **argv) {
       logexit("accept");
     }
     
-    // char caddrstr[BUFSZ];
-    // addrtostr(addr, caddrstr, BUFSZ);
-    // printf("[log] connection from %s\n", caddrstr);
     printf("client connected\n");
-    // printBoard(board);
-    printDefaultBoard();
+
     while (1) {
       // Não trata msgs complexas do cliente, pensa que o cliente manda tudo de uma vez.
       // Se chegar incompleto, essa que vai ser a msg
@@ -170,11 +162,13 @@ int main(int argc, char **argv) {
 
       // Fecha a conexão do cliente, caso ele tenha saido do jogo.
       if (clientGame.type == 7) {
-        break;
+        printf("client disconnected\n");
+        resetBoard();
+        printBoard(board);
       } else {
         handleClientCommand(clientGame);
       }
-      printDefaultBoard();
+
       // Enviando jogo para o servidor.
       count = send(csock, &game, sizeof(struct action), 0);
 

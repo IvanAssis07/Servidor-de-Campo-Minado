@@ -126,6 +126,23 @@ int main(int argc, char **argv) {
       count = recv(s, &clientGame, sizeof(struct action), 0);
       if (count == 0) {
         break;
+      } 
+      
+      if (clientGame.type == 5) {
+        printf("starting new game\n");
+        printBoard(clientGame.board);
+        break;
+      }
+      
+      if (clientGame.type == 6) {
+        printf("YOU WIN!\n");
+        printBoard(clientGame.board);
+        break;
+      }
+      if (clientGame.type == 8) {
+        printf("GAME OVER!\n");
+        printBoard(clientGame.board);
+        break;
       }
 
       printBoard(clientGame.board);
