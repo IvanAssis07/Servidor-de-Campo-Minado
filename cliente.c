@@ -110,7 +110,6 @@ int main(int argc, char **argv) {
 
   char addrstr[BUFSZ];
   addrtostr(addr, addrstr, BUFSZ);
-  printf("connected to %s\n", addrstr);
 
   while (1) {
     int valid = getPlay();

@@ -30,6 +30,35 @@ void resetBoard() {
   }
 }
 
+void printDefBoard() {
+  printf("\n");
+  int i, j;
+  for(i = 0; i < 4; i++) {
+    for(j = 0; j < 4; j++) {
+      printf("%d\t\t", game.board[i][j]);
+    }
+    printf("\n");
+  }
+}
+
+int checkWin() {
+  int i, j;
+  int count = 0;
+  for(i = 0; i < 4; i++) {
+    for(j = 0; j < 4; j++) {
+      if (game.board[i][j] == -2 || game.board[i][j] == -3) {
+        count++;
+      }
+    }
+  }
+
+  if (count == bombs) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 void setBoard() {
   int i, j;
   for(i = 0; i < 4; i++) {
@@ -88,6 +117,12 @@ void handleClientCommand (struct action clientGame) {
         game.board[x][y] = board[x][y];
         game.type = 3;
       }
+
+      if (checkWin() == 1) {
+        resetBoard();
+        game.type = 6;
+      }
+
       break;
     case 2: //flag
       game.board[x][y] = -3;
@@ -140,7 +175,7 @@ int main(int argc, char **argv) {
   char addrstr[BUFSZ];
   addrtostr(addr, addrstr, BUFSZ);
   printBoard(board);
-  
+
   while(1) {
     struct sockaddr_storage cstorage; // Endereço do cliente.
     struct sockaddr *caddr = (struct sockaddr *)(&cstorage);
@@ -157,6 +192,7 @@ int main(int argc, char **argv) {
       // Não trata msgs complexas do cliente, pensa que o cliente manda tudo de uma vez.
       // Se chegar incompleto, essa que vai ser a msg
       struct action clientGame;
+
       size_t count = recv(csock, &clientGame, sizeof(struct action) , 0); // Qtd de bytes recebidos.
       // printf("mensagem do cliente: %d\n", clientGame.type);
 
@@ -164,7 +200,7 @@ int main(int argc, char **argv) {
       if (clientGame.type == 7) {
         printf("client disconnected\n");
         resetBoard();
-        printBoard(board);
+        break;
       } else {
         handleClientCommand(clientGame);
       }
