@@ -34,7 +34,7 @@ void getMatrix(char *buf) {
     while (token != NULL && colsRead < 4) {
       int cell = atoi(token);
       board[rowsRead][colsRead] = cell;
-      game.board[rowsRead][colsRead] = cell;
+      game.board[rowsRead][colsRead] = -2;
       token = strtok(NULL, ","); // Continue tokenizing the string you passed in first.
 
       colsRead++;
@@ -45,42 +45,6 @@ void getMatrix(char *buf) {
   }
 
   fclose(fp);
-}
-
-void handleCommand() {
-  switch (game.type) {
-    case 0:
-      printf("Start command\n");
-      break;
-    case 1:
-      printf("Reveal command\n");
-      if (board[game.coordinates[0]][game.coordinates[0]] == -1) {
-        printf("Game over\n");
-      } else {
-        printf("Game continues\n");
-      }
-    case 2:
-      printf("Flag command\n");
-      break;
-    case 3:
-      printf("State command\n");
-      break;  
-    case 4: 
-      printf("remove_flag command\n");
-      break;
-    case 5: 
-      printf("Reset command\n");
-      break;
-    case 6:
-      printf("Win command\n");
-      break;
-    case 7:
-      printf("Exit command\n");
-      break;
-    case 8:
-      printf("Game_over command\n");
-      break;
-  }
 }
 
 // Tipo protocolo, port
@@ -143,6 +107,7 @@ int main(int argc, char **argv) {
     // addrtostr(addr, caddrstr, BUFSZ);
     // printf("[log] connection from %s\n", caddrstr);
     printf("client connected\n");
+    printBoard(board);
     while (1) {
       // Não trata msgs complexas do cliente, pensa que o cliente manda tudo de uma vez.
       // Se chegar incompleto, essa que vai ser a msg

@@ -12,7 +12,15 @@
 #define BUFSZ 1024
 struct action clientGame;
 
-void getPlay() {
+int checkBounds(int x, int y) {
+  if (x < 0 || x > 3 || y < 0 || y > 3) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+
+int getPlay() {
   char *line = NULL; // Dynamic allocation for the line
   size_t len = 0;    // Size of the allocated buffer
   char command[20];
@@ -22,28 +30,24 @@ void getPlay() {
   line[strcspn(line, "\r\n")] = 0;
 
   if (sscanf(line, "%s %d,%d", command, &x, &y) == 1) {
-    if(strcmp(command, "start") == 0) {
+    if (strcmp(command, "start") == 0) {
       printf("Start command\n");
       clientGame.type = 0;
-    } else if (strcmp(command, "state") == 0) {
-      printf("State command\n");
-      clientGame.type = 3;
-    } else if (strcmp(command, "win") == 0) {
-      printf("Win command\n");
-      clientGame.type = 6;
     } else if (strcmp(command, "reset") == 0) {
       printf("Reset command\n");
       clientGame.type = 5;
     } else if (strcmp(command, "exit") == 0) {
       printf("Exit command\n");
       clientGame.type = 7;
-    } else if (strcmp(command, "game_over") == 0) {
-      printf("Game_over command\n");
-      clientGame.type = 8;
     } else {
-      printf("Invalid command\n");
+      printf("error: command not found\n");
+      return 0;
     }
   } else if (sscanf(line, "%s %d,%d", command, &x, &y) == 3) {
+    if (checkBounds(x, y) == 0) {
+      printf("error: invalid cell\n");
+      return 0;
+    }
     if(strcmp(command, "reveal") == 0) {
       printf("reveal command\n");
       clientGame.type = 1;
@@ -60,11 +64,15 @@ void getPlay() {
       clientGame.coordinates[0] = x;
       clientGame.coordinates[1] = y;
     } else {
-      printf("Invalid command\n");
+      printf("error: command not found\n");
+      return 0;
     }
   } else {
     printf("error: command not found\n");
+    return 0;
   }
+
+  return 1;
 }
 
 void usage(int argc, char **argv) {
@@ -97,23 +105,26 @@ int main(int argc, char **argv) {
 
   char addrstr[BUFSZ];
   addrtostr(addr, addrstr, BUFSZ);
-
   printf("connected to %s\n", addrstr);
-  while (1) {
-    getPlay();
 
-    size_t count = send(s, &clientGame, sizeof(struct action), 0);
-    if(count != sizeof(struct action)) {
-      logexit("send");
+  while (1) {
+    int valid = getPlay();
+
+    if (valid == 0) {
+      continue;
+    } else {
+      size_t count = send(s, &clientGame, sizeof(struct action), 0);
+      if(count != sizeof(struct action)) {
+        logexit("send");
+      }
+      
+      count = recv(s, &clientGame, sizeof(struct action), 0);
+      if (count == 0) {
+        break;
+      }
+
+      printBoard(clientGame.board);
     }
-    
-    count = recv(s, &clientGame, sizeof(struct action), 0);
-    if (count == 0) {
-      // printf("Conexão fechada\n");
-      break;
-    }
-    
-    printBoard(clientGame.board);
   }
   
   close(s);
