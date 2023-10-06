@@ -91,7 +91,7 @@ int main(int argc, char **argv) {
 
   char addrstr[BUFSZ];
   addrtostr(addr, addrstr, BUFSZ);
-  printf("bound to %s, waiting connections\n", addrstr);
+  // printf("bound to %s, waiting connections\n", addrstr);
 
   while(1) {
     struct sockaddr_storage cstorage; // Endereço do cliente.
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
 
     char caddrstr[BUFSZ];
     addrtostr(addr, caddrstr, BUFSZ);
-    printf("[log] connection from %s\n", caddrstr);
+    // printf("[log] connection from %s\n", caddrstr);
 
     // Não trata msgs complexas do cliente, pensa que o cliente manda tudo de uma vez.
     // Se chegar incompleto, essa que vai ser a msg
