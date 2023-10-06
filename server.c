@@ -47,6 +47,42 @@ void getMatrix(char *buf) {
   fclose(fp);
 }
 
+void handleCommand() {
+  switch (game.type) {
+    case 0:
+      printf("Start command\n");
+      break;
+    case 1:
+      printf("Reveal command\n");
+      if (board[game.coordinates[0]][game.coordinates[0]] == -1) {
+        printf("Game over\n");
+      } else {
+        printf("Game continues\n");
+      }
+    case 2:
+      printf("Flag command\n");
+      break;
+    case 3:
+      printf("State command\n");
+      break;  
+    case 4: 
+      printf("remove_flag command\n");
+      break;
+    case 5: 
+      printf("Reset command\n");
+      break;
+    case 6:
+      printf("Win command\n");
+      break;
+    case 7:
+      printf("Exit command\n");
+      break;
+    case 8:
+      printf("Game_over command\n");
+      break;
+  }
+}
+
 // Tipo protocolo, port
 void usage(int argc, char **argv) {
   printf("usage: %s <v4|6> <server port>\n", argv[0]);
@@ -60,7 +96,7 @@ int main(int argc, char **argv) {
   }
 
   getMatrix(argv[4]);
-  printBoard(board);
+  // printBoard(board);
 
   struct sockaddr_storage storage;
   // arg[1] -> tipo protocolo, argv[2] -> porta
@@ -102,22 +138,30 @@ int main(int argc, char **argv) {
     if(csock == -1) {
       logexit("accept");
     }
-
-    char caddrstr[BUFSZ];
-    addrtostr(addr, caddrstr, BUFSZ);
+    
+    // char caddrstr[BUFSZ];
+    // addrtostr(addr, caddrstr, BUFSZ);
     // printf("[log] connection from %s\n", caddrstr);
+    printf("client connected\n");
+    while (1) {
+      // Não trata msgs complexas do cliente, pensa que o cliente manda tudo de uma vez.
+      // Se chegar incompleto, essa que vai ser a msg
+      struct action clientGame;
+      size_t count = recv(csock, &clientGame, sizeof(struct action) , 0); // Qtd de bytes recebidos.
+      // printf("mensagem do cliente: %d\n", clientGame.type);
 
-    // Não trata msgs complexas do cliente, pensa que o cliente manda tudo de uma vez.
-    // Se chegar incompleto, essa que vai ser a msg
-    struct action clientGame;
-    size_t count = recv(csock, &clientGame, sizeof(struct action) , 0); // Qtd de bytes recebidos.
-  
-    // Enviando jogo para o cliente.
-    count = send(csock, &game, sizeof(struct action), 0);
+      // Fecha a conexão do cliente, caso ele tenha saido do jogo.
+      if (clientGame.type == 7) {
+        break;
+      }
+    
+      // Enviando jogo para o servidor.
+      count = send(csock, &game, sizeof(struct action), 0);
 
-    // Testa se não enviou tudo.
-    if (count != sizeof(struct action)) {
-      logexit("send");
+      // Testa se não enviou tudo.
+      if (count != sizeof(struct action)) {
+        logexit("send");
+      } 
     }
 
     close(csock); // Fecha a conexão com o cliente.

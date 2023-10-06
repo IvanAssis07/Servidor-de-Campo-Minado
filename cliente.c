@@ -12,43 +12,11 @@
 #define BUFSZ 1024
 struct action clientGame;
 
-void initBoard() {
-  for(int i = 0; i < 4; i++) {
-    for(int j = 0; j < 4; j++) {
-      printf("-\t\t");
-    }
-    printf("\n");
-  }
-}
-
-void clientPrintBoard(int board[4][4]) {
-  int i, j;
-  for(i = 0; i < 4; i++) {
-    for(j = 0; j < 4; j++) {
-      switch (board[i][j]) {
-        case (-1):
-          printf("*\t\t");
-          break;
-        case (-2):
-          printf("-\t\t");
-          break;
-        case (-3):
-          printf(">\t\t");
-          break;
-        default:
-          printf("%d\t\t", board[i][j]);
-      }
-    }
-    printf("\n");
-  }
-}
-
 void getPlay() {
   char *line = NULL; // Dynamic allocation for the line
   size_t len = 0;    // Size of the allocated buffer
   char command[20];
   int x, y;
-  ssize_t read;
 
   getline(&line, &len, stdin);
   line[strcspn(line, "\r\n")] = 0;
@@ -71,7 +39,7 @@ void getPlay() {
       clientGame.type = 7;
     } else if (strcmp(command, "game_over") == 0) {
       printf("Game_over command\n");
-      clientGame.type = 7;
+      clientGame.type = 8;
     } else {
       printf("Invalid command\n");
     }
@@ -95,7 +63,7 @@ void getPlay() {
       printf("Invalid command\n");
     }
   } else {
-    printf("Invalid command\n");
+    printf("error: command not found\n");
   }
 }
 
@@ -109,7 +77,7 @@ int main(int argc, char **argv) {
   if (argc < 3) {
     usage(argc, argv);
   }
-  initBoard();
+
   struct sockaddr_storage storage;
   if (addrparse(argv[1], argv[2], &storage) != 0) {
     usage(argc, argv);
@@ -131,21 +99,24 @@ int main(int argc, char **argv) {
   addrtostr(addr, addrstr, BUFSZ);
 
   printf("connected to %s\n", addrstr);
-  getPlay();
+  while (1) {
+    getPlay();
 
-  size_t count = send(s, &clientGame, sizeof(struct action), 0);
-  if(count != sizeof(struct action)) {
-    logexit("send");
+    size_t count = send(s, &clientGame, sizeof(struct action), 0);
+    if(count != sizeof(struct action)) {
+      logexit("send");
+    }
+    
+    count = recv(s, &clientGame, sizeof(struct action), 0);
+    if (count == 0) {
+      // printf("Conexão fechada\n");
+      break;
+    }
+    
+    printBoard(clientGame.board);
   }
   
-  count = recv(s, &clientGame, sizeof(struct action), 0);
-  if (count == 0) {
-    printf("Conexão fechada\n");
-  }
   close(s);
-  printf("mensagem do servidor: \n");
-  printBoard(clientGame.board);
-
   exit(EXIT_SUCCESS);
 }
 
