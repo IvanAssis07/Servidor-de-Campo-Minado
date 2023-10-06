@@ -9,6 +9,20 @@ void logexit(const char *msg) {
   exit(EXIT_FAILURE);
 }
 
+void printBoard(int board[4][4]) {
+  for(int i = 0; i < 4; i++) {
+    for(int j = 0; j < 4; j++) {
+      if (board[i][j] == -1) {
+        printf("*\t\t");
+      } else {
+        printf("%d", board[i][j]);
+        printf("\t\t");
+      }
+    }
+    printf("\n");
+  }
+}
+
 int addrparse(const char *addtstr, const char *portstr, struct sockaddr_storage *storage)
 {
   if (addtstr == NULL || portstr == NULL)

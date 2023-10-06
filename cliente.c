@@ -10,6 +10,7 @@
 #include <netdb.h>
 
 #define BUFSZ 1024
+struct action clientGame;
 
 void usage(int argc, char **argv) {
   printf("usage: %s <server IP> <server port>", argv[0]);
@@ -33,6 +34,7 @@ int main(int argc, char **argv) {
     logexit("socket");
   }
 
+  // struct sockaddr "uma interface" para os 2 tipos de endereço"
   struct sockaddr *addr = (struct sockaddr *)(&storage);
   if(connect(s, addr, sizeof(storage)) != 0) {
     logexit("connect");
@@ -43,30 +45,18 @@ int main(int argc, char **argv) {
 
   printf("connected to %s\n", addrstr);
 
-  char buf[BUFSZ];
-  memset(buf, 0, BUFSZ);
-  printf("mensagem: ");
-  fgets(buf, BUFSZ-1, stdin);
-  size_t count = send(s, buf, strlen(buf) + 1, 0);
-  if(count != strlen(buf) + 1) {
+  size_t count = send(s, &clientGame, sizeof(struct action), 0);
+  if(count != sizeof(struct action)) {
     logexit("send");
   }
-
-  memset(buf, 0, BUFSZ);
-  unsigned total = 0;
-  while (1) {
-    // Servidor pode mandar msg em parcelas pequenas
-    count = recv(s, buf + total, BUFSZ - total, 0);
-    if (count == 0) {
-      break;
-    }
-
-    total += count;
+  
+  count = recv(s, &clientGame, sizeof(struct action), 0);
+  if (count == 0) {
+    printf("Conexão fechada\n");
   }
   close(s);
-
-  printf("received %u bytes\n", total);
-	puts(buf);
+  printf("mensagem do servidor: \n");
+  printBoard(clientGame.board);
 
   exit(EXIT_SUCCESS);
 }

@@ -10,18 +10,57 @@
 #include <netdb.h>
 
 #define BUFSZ 1024
+int board[4][4];
+struct action game;
+
+void getMatrix(char *buf) {
+  FILE *fp;
+  fp = fopen(buf, "r");
+
+  if(fp == NULL) {
+    printf("Not able to open the file.");
+  }
+
+  char *buffer;
+  size_t bufsize = 128;
+  int rowsRead = 0;
+  int colsRead = 0;
+
+  buffer = (char *)malloc(bufsize * sizeof(char));
+
+  while (rowsRead < 4 && (getline(&buffer, &bufsize, fp)) != -1) {
+    char *token = strtok(buffer, ",");
+
+    while (token != NULL && colsRead < 4) {
+      int cell = atoi(token);
+      board[rowsRead][colsRead] = cell;
+      game.board[rowsRead][colsRead] = cell;
+      token = strtok(NULL, ","); // Continue tokenizing the string you passed in first.
+
+      colsRead++;
+    }
+
+    rowsRead++;
+    colsRead = 0;
+  }
+
+  fclose(fp);
+}
 
 // Tipo protocolo, port
 void usage(int argc, char **argv) {
-  printf("usage: %s <v4|6> <server port>", argv[0]);
+  printf("usage: %s <v4|6> <server port>\n", argv[0]);
   printf("example: %s v4 51511\n", argv[0]);
   exit(EXIT_FAILURE);
 }
 
 int main(int argc, char **argv) {
-  if (argc < 3) {
+  if (argc < 5) {
     usage(argc, argv);
   }
+
+  getMatrix(argv[4]);
+  printBoard(board);
 
   struct sockaddr_storage storage;
   // arg[1] -> tipo protocolo, argv[2] -> porta
@@ -70,17 +109,14 @@ int main(int argc, char **argv) {
 
     // Não trata msgs complexas do cliente, pensa que o cliente manda tudo de uma vez.
     // Se chegar incompleto, essa que vai ser a msg
-    char buf[BUFSZ];
-    memset(buf, 0, BUFSZ); // Zera o buffer.
-    size_t count = recv(csock, buf, BUFSZ, 0); // Qtd de bytes recebidos.
-    printf("[msg] %s, %d bytes: %s\n", caddrstr, (int)count, buf);
+    struct action clientGame;
+    size_t count = recv(csock, &clientGame, sizeof(struct action) , 0); // Qtd de bytes recebidos.
   
-    // Envia a msg de volta para o cliente.
-    sprintf(buf, "remove endpoint: %.1000s\n", caddrstr);
-    count = send(csock, buf, strlen(buf) + 1, 0);
+    // Enviando jogo para o cliente.
+    count = send(csock, &game, sizeof(struct action), 0);
 
     // Testa se não enviou tudo.
-    if (count != strlen(buf) + 1) {
+    if (count != sizeof(struct action)) {
       logexit("send");
     }
 
