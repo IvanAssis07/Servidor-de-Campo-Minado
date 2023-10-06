@@ -13,6 +13,31 @@
 int board[4][4];
 struct action game;
 
+// Tipo protocolo, port
+void usage(int argc, char **argv) {
+  printf("usage: %s <v4|6> <server port>\n", argv[0]);
+  printf("example: %s v4 51511\n", argv[0]);
+  exit(EXIT_FAILURE);
+}
+
+void printDefaultBoard(){
+  for(int i = 0; i < 4; i++) {
+    for(int j = 0; j < 4; j++) {
+      printf("%d\t\t", game.board[i][j]);
+      }
+    printf("\n");
+    }
+}
+
+void resetBoard() {
+  int i, j;
+  for(i = 0; i < 4; i++) {
+    for(j = 0; j < 4; j++) {
+      board[i][j] = -2;
+    }
+  }
+}
+
 void getMatrix(char *buf) {
   FILE *fp;
   fp = fopen(buf, "r");
@@ -47,11 +72,38 @@ void getMatrix(char *buf) {
   fclose(fp);
 }
 
-// Tipo protocolo, port
-void usage(int argc, char **argv) {
-  printf("usage: %s <v4|6> <server port>\n", argv[0]);
-  printf("example: %s v4 51511\n", argv[0]);
-  exit(EXIT_FAILURE);
+void handleClientCommand (struct action clientGame) {
+  int x = clientGame.coordinates[0];
+  int y = clientGame.coordinates[1];
+  printf("ComRecv: %d, Coord: %d %d\n", clientGame.type, clientGame.coordinates[0], clientGame.coordinates[1]);
+  switch (clientGame.type) {
+    case 0:
+      printf("start\n");
+      break;
+    case 1:
+      if (board[x][y] == -1) {
+        printf("Game Over\n");
+        game.type = 8;
+      } else {
+        printf("Reveal\n");
+        game.board[x][y] = board[x][y];
+        game.type = 3;
+      }
+      break;
+    case 2: //flag
+      game.board[x][y] = -3;
+      game.type = 3;
+      break;
+    case 4: // remove_flag
+      game.board[x][y] = -2;
+      game.type = 3;
+      break;
+    case 5: // reset
+      resetBoard();
+      // game.type = 6;
+      break;
+    printf("reset\n");
+  }
 }
 
 int main(int argc, char **argv) {
@@ -107,7 +159,8 @@ int main(int argc, char **argv) {
     // addrtostr(addr, caddrstr, BUFSZ);
     // printf("[log] connection from %s\n", caddrstr);
     printf("client connected\n");
-    printBoard(board);
+    // printBoard(board);
+    printDefaultBoard();
     while (1) {
       // Não trata msgs complexas do cliente, pensa que o cliente manda tudo de uma vez.
       // Se chegar incompleto, essa que vai ser a msg
@@ -118,8 +171,10 @@ int main(int argc, char **argv) {
       // Fecha a conexão do cliente, caso ele tenha saido do jogo.
       if (clientGame.type == 7) {
         break;
+      } else {
+        handleClientCommand(clientGame);
       }
-    
+      printDefaultBoard();
       // Enviando jogo para o servidor.
       count = send(csock, &game, sizeof(struct action), 0);
 

@@ -31,13 +31,10 @@ int getPlay() {
 
   if (sscanf(line, "%s %d,%d", command, &x, &y) == 1) {
     if (strcmp(command, "start") == 0) {
-      printf("Start command\n");
       clientGame.type = 0;
     } else if (strcmp(command, "reset") == 0) {
-      printf("Reset command\n");
       clientGame.type = 5;
     } else if (strcmp(command, "exit") == 0) {
-      printf("Exit command\n");
       clientGame.type = 7;
     } else {
       printf("error: command not found\n");
@@ -49,17 +46,25 @@ int getPlay() {
       return 0;
     }
     if(strcmp(command, "reveal") == 0) {
-      printf("reveal command\n");
+      if (clientGame.board[x][y] >= 0) {
+        printf("error: cell already revealed\n");
+        return 0;
+      } 
       clientGame.type = 1;
       clientGame.coordinates[0] = x;
       clientGame.coordinates[1] = y;
     } else if (strcmp(command, "flag") == 0) {
-      printf("flag command: %d, %d\n", x, y);
+      if (clientGame.board[x][y] == -3) {
+        printf("error: cell already has a flag\n");
+        return 0;
+      } else if (clientGame.board[x][y] >= 0) {
+        printf("error: cannot insert flag in revealed cell\n");
+        return 0;
+      }
       clientGame.type = 2;
       clientGame.coordinates[0] = x;
       clientGame.coordinates[1] = y;
     } else if (strcmp(command, "remove_flag") == 0) {
-      printf("remove_flagcommand: %d, %d\n", x, y);
       clientGame.type = 4;
       clientGame.coordinates[0] = x;
       clientGame.coordinates[1] = y;
