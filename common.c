@@ -39,10 +39,10 @@ int addrparse(const char *addtstr, const char *portstr, struct sockaddr_storage 
 
   // Padrão internet port tem 16bits
   uint16_t port = (uint16_t)atoi(portstr); 
-  if (port == 0)
-  {
+  if (port == 0) {
     return -1;
   }
+
   port = htons(port); // Converte para bigEndian
 
   // Fazer o parser do endereço (IPv4 ou IPv6)
@@ -70,9 +70,9 @@ int addrparse(const char *addtstr, const char *portstr, struct sockaddr_storage 
   return -1;
 }
 
-int server_sockaddr_init(const char *proto, const char* portstr, struct sockaddr_storage *storage) {
+int server_sockaddr_init(const char *ipVersion, const char* portstr, struct sockaddr_storage *storage) {
   // Padrão internet port tem 16bits
-  uint16_t port = (uint16_t)atoi(portstr); // unsigned short int
+  uint16_t port = (uint16_t)atoi(portstr); 
   if (port == 0) {
     return -1;
   }
@@ -80,14 +80,14 @@ int server_sockaddr_init(const char *proto, const char* portstr, struct sockaddr
   port = htons(port); // Converte para bigEndian.
 
   memset(storage, 0, sizeof(*storage));
-  if (strcmp(proto, "v4") == 0) {
+  if (strcmp(ipVersion, "v4") == 0) {
     struct sockaddr_in *addr4 = (struct sockaddr_in *)storage;
     addr4->sin_family = AF_INET;
     addr4->sin_addr.s_addr = INADDR_ANY; // Roda em qualquer endereço disponível do PC
     addr4->sin_port = htons(port);
 
     return 0;
-  } else if(strcmp(proto, "v6") == 0) {
+  } else if(strcmp(ipVersion, "v6") == 0) {
     struct sockaddr_in6 *addr6 = (struct sockaddr_in6 *)storage;
     addr6->sin6_family = AF_INET6;
     addr6->sin6_addr = in6addr_any; // Roda em qualquer disponível endereço do PC

@@ -1,9 +1,10 @@
 #include "common.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
+
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netdb.h>
@@ -113,8 +114,8 @@ void handleClientCommand (struct action clientGame) {
       }
 
       if (checkWin() == 1) {
-        resetBoard();
         game.type = 6;
+        setBoard();
       }
 
       break;

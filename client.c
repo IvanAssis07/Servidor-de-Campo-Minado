@@ -4,14 +4,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <signal.h>
+
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netdb.h>
 
 #define BUFSZ 1024
-struct action clientGame;
+struct action game;
 
+// Exibe ao cliente argumentos esperados para iniciar o cliente.
+void usage(int argc, char **argv) {
+  printf("usage: %s <server IP> <server port>", argv[0]);
+  printf("example: %s 127.0.0.1 51511", argv[0]);
+  exit(EXIT_FAILURE);
+};
+
+// Checa se as coordenadas estão dentro dos limites do tabuleiro.
 int checkBounds(int x, int y) {
   if (x < 0 || x > 3 || y < 0 || y > 3) {
     return 0;
@@ -20,9 +28,11 @@ int checkBounds(int x, int y) {
   }
 }
 
-int getPlay() {
-  char *line = NULL; // Dynamic allocation for the line
-  size_t len = 0;    // Size of the allocated buffer
+// Lê o comando do usuário e armazena na struct game.
+// Retorna 1 se o comando é válido e 0 caso contrário.
+int getCommand() {
+  char *line = NULL; 
+  size_t len = 0;   
   char command[20];
   int x, y;
 
@@ -31,11 +41,11 @@ int getPlay() {
 
   if (sscanf(line, "%s %d,%d", command, &x, &y) == 1) {
     if (strcmp(command, "start") == 0) {
-      clientGame.type = 0;
+      game.type = 0;
     } else if (strcmp(command, "reset") == 0) {
-      clientGame.type = 5;
+      game.type = 5;
     } else if (strcmp(command, "exit") == 0) {
-      clientGame.type = 7;
+      game.type = 7;
     } else {
       printf("error: command not found\n");
       return 0;
@@ -46,28 +56,28 @@ int getPlay() {
       return 0;
     }
     if(strcmp(command, "reveal") == 0) {
-      if (clientGame.board[x][y] >= 0) {
+      if (game.board[x][y] >= 0) {
         printf("error: cell already revealed\n");
         return 0;
       } 
-      clientGame.type = 1;
-      clientGame.coordinates[0] = x;
-      clientGame.coordinates[1] = y;
+      game.type = 1;
+      game.coordinates[0] = x;
+      game.coordinates[1] = y;
     } else if (strcmp(command, "flag") == 0) {
-      if (clientGame.board[x][y] == -3) {
+      if (game.board[x][y] == -3) {
         printf("error: cell already has a flag\n");
         return 0;
-      } else if (clientGame.board[x][y] >= 0) {
+      } else if (game.board[x][y] >= 0) {
         printf("error: cannot insert flag in revealed cell\n");
         return 0;
       }
-      clientGame.type = 2;
-      clientGame.coordinates[0] = x;
-      clientGame.coordinates[1] = y;
+      game.type = 2;
+      game.coordinates[0] = x;
+      game.coordinates[1] = y;
     } else if (strcmp(command, "remove_flag") == 0) {
-      clientGame.type = 4;
-      clientGame.coordinates[0] = x;
-      clientGame.coordinates[1] = y;
+      game.type = 4;
+      game.coordinates[0] = x;
+      game.coordinates[1] = y;
     } else {
       printf("error: command not found\n");
       return 0;
@@ -80,13 +90,8 @@ int getPlay() {
   return 1;
 }
 
-void usage(int argc, char **argv) {
-  printf("usage: %s <server IP> <server port>", argv[0]);
-  printf("example: %s 127.0.0.1 51511", argv[0]);
-  exit(EXIT_FAILURE);
-};
- 
 int main(int argc, char **argv) {
+  // Checando se o usuário passou os argumentos corretamente.
   if (argc < 3) {
     usage(argc, argv);
   }
@@ -96,56 +101,59 @@ int main(int argc, char **argv) {
     usage(argc, argv);
   }
 
-  int s;
-  s = socket(storage.ss_family , SOCK_STREAM, 0);
-  if (s == -1) {
+  int socketfd;
+  socketfd = socket(storage.ss_family , SOCK_STREAM, 0);
+  if (socketfd == -1) {
     logexit("socket");
   }
 
-  // struct sockaddr "uma interface" para os 2 tipos de endereço"
+  // Estabelecendo conexão com servidor
   struct sockaddr *addr = (struct sockaddr *)(&storage);
-  if(connect(s, addr, sizeof(storage)) != 0) {
+  if(connect(socketfd, addr, sizeof(storage)) != 0) {
     logexit("connect");
   }
 
+  // Após conectado, o cliente pode enviar comandos e jogar.
   while (1) {
-    int valid = getPlay();
+    // Lendo comando do cliente.
+    int valid = getCommand();
 
+    // Se o comando for inválido, o cliente deve inserir um novo comando.
     if (valid == 0) {
       continue;
     } else {
-      size_t count = send(s, &clientGame, sizeof(struct action), 0);
-      if(count != sizeof(struct action)) {
+      size_t bytesCounter = send(socketfd, &game, sizeof(struct action), 0);
+      if(bytesCounter != sizeof(struct action)) {
         logexit("send");
       }
       
-      count = recv(s, &clientGame, sizeof(struct action), 0);
-      if (count == 0) {
+      bytesCounter = recv(socketfd, &game, sizeof(struct action), 0);
+      if (bytesCounter == 0) {
         break;
       } 
       
-      if (clientGame.type == 5) {
-        printf("starting new game\n");
-        printBoard(clientGame.board);
+      // Checando reset.
+      if (game.type == 5) {
+        printBoard(game.board);
         break;
       }
       
-      if (clientGame.type == 6) {
+      // Checando vitória.
+      if (game.type == 6) {
         printf("YOU WIN!\n");
-        printBoard(clientGame.board);
-        break;
-      }
-      if (clientGame.type == 8) {
-        printf("GAME OVER!\n");
-        // printBoard(clientGame.board);
-        // break;
       }
 
-      printBoard(clientGame.board);
+      // Checando se o jogo acabou.
+      if (game.type == 8) {
+        printf("GAME OVER!\n");
+      }
+
+      printBoard(game.board);
     }
   }
   
-  close(s);
+  // Ao dar o comando "exit", o jogo é finalizado e a conexão é encerrada.
+  close(socketfd);
   exit(EXIT_SUCCESS);
 }
 
