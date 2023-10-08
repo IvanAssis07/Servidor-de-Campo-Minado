@@ -108,9 +108,6 @@ int main(int argc, char **argv) {
     logexit("connect");
   }
 
-  char addrstr[BUFSZ];
-  addrtostr(addr, addrstr, BUFSZ);
-
   while (1) {
     int valid = getPlay();
 
