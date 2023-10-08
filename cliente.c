@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
+#include <signal.h>
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netdb.h>
@@ -140,8 +140,8 @@ int main(int argc, char **argv) {
       }
       if (clientGame.type == 8) {
         printf("GAME OVER!\n");
-        printBoard(clientGame.board);
-        break;
+        // printBoard(clientGame.board);
+        // break;
       }
 
       printBoard(clientGame.board);

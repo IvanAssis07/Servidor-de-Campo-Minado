@@ -134,6 +134,7 @@ void handleClientCommand (struct action clientGame) {
       break;
     case 5: // reset
       printf("starting new game\n");
+      game.type = 3;
       resetBoard();
       break;
   }
@@ -200,6 +201,7 @@ int main(int argc, char **argv) {
       if (clientGame.type == 7) {
         printf("client disconnected\n");
         resetBoard();
+        game.type = 3;
         break;
       } else {
         handleClientCommand(clientGame);

@@ -1,0 +1,7 @@
+- Game Over: Manter a conexão no lado do cliente,  poder dar um reset e começar de novo no cliente.
+
+- Fechar servidor: apenas se chamar o cliente der exit.
+
+- Client disconnected
+
+- Cliente pode liberar celula com flag
